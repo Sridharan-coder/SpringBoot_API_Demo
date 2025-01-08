@@ -1,0 +1,19 @@
+{
+	"properties": [
+		{
+			"name": "file.upload-dir",
+			"type": "java.lang.String",
+			"description": "A description for 'file.upload-dir' = This was the file upload location in the folder."
+		},
+		{
+			"name": "XClientId",
+			"type": "java.lang.String",
+			"description": "A description for 'XClientId' = This was the client ID made from the cashfree api online."
+		},
+		{
+			"name": "XClientSecret",
+			"type": "java.lang.String",
+			"description": "A description for 'XClientSecret' = This was the clientSecret made from the cashfree api online."
+		}
+	]
+}
