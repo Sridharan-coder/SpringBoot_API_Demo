@@ -60,9 +60,7 @@ public class SellerDBConfig {
 										.append("s_emailAddress",
 												new Document().append("bsonType", "string")
 														.append("description",
-																"must be a string and is required")
-														.append("pattern",
-																"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+																"must be a string and is required"))
 										.append("s_password", new Document().append("bsonType", "string")
 												.append("description", "must be a string and is required")
 												.append("pattern",

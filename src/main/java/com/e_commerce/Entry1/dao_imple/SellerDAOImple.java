@@ -11,6 +11,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +30,19 @@ public class SellerDAOImple implements SellerDAO {
 
 	@Autowired
 	private SellerRepository sellerRepository;
+
+	@Autowired
+	private MongoTemplate mongoTemplate;
+
+	@Autowired
+	private AuthenticationManager authManager;
 	
 	@Autowired
-    private MongoTemplate mongoTemplate;
+	private JWTServices jwtServices;
 
 	private static final Logger logger = LoggerFactory.getLogger(SellerController.class);
-	
-	private BCryptPasswordEncoder encoder= new BCryptPasswordEncoder(12);
+
+	private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
 	@Override
 	public ResponseEntity<?> addSeller(Seller seller) {
@@ -47,15 +57,11 @@ public class SellerDAOImple implements SellerDAO {
 			Integer s_id = randomNum;
 			String s_name = seller.getS_name();
 			Long s_phoneNumberLong = seller.getS_phoneNumber();
-			String s_emailAddress = encoder.encode(seller.getS_emailAddress());
-			String s_password = seller.getS_password();
+			String s_emailAddress = seller.getS_emailAddress();
+			String s_password = encoder.encode(seller.getS_password());
 			Integer __v = 0;
 			Seller sellerTemp = new Seller(s_id, s_name, s_phoneNumberLong, s_emailAddress, s_password, __v);
-			System.out.println("s_id type: " + ((Object) s_id).getClass().getName());
-			System.out.println("s_name type: " + ((Object) s_name).getClass().getName());
-			System.out.println("s_phoneNumber type: " + ((Object) s_phoneNumberLong).getClass().getName());
-			System.out.println("s_emailAddress type: " + ((Object) s_emailAddress).getClass().getName());
-			System.out.println("s_password type: " + ((Object) s_password).getClass().getName());
+			System.out.println("s_id type: " + sellerTemp.toString());
 
 			sellerRepository.save(sellerTemp);
 			map.put("success", true);
@@ -112,7 +118,7 @@ public class SellerDAOImple implements SellerDAO {
 			update.set("s_password", encoder.encode(updatedSeller.getS_password()));
 
 			Seller updated = mongoTemplate.findAndModify(query, update, Seller.class);
-			
+
 			if (updated == null) {
 				map.put("success", true);
 				map.put("message", "Seller Not Found");
@@ -134,22 +140,20 @@ public class SellerDAOImple implements SellerDAO {
 		Map<String, Object> map = new LinkedHashMap<>();
 		try {
 			Query query = new Query();
-	        query.addCriteria(Criteria.where("s_id").is(s_id));
+			query.addCriteria(Criteria.where("s_id").is(s_id));
 
-	        long deletedCount = mongoTemplate.remove(query, Seller.class).getDeletedCount();
+			long deletedCount = mongoTemplate.remove(query, Seller.class).getDeletedCount();
 
-			if(deletedCount > 0) {
+			if (deletedCount > 0) {
 				map.put("success", true);
 				map.put("message", "Seller Deleted successfully");
 				return new ResponseEntity<>(map, HttpStatus.OK);
-			}
-			else {
+			} else {
 				map.put("success", true);
 				map.put("message", "Seller Not Found");
 				return new ResponseEntity<>(map, HttpStatus.NOT_FOUND);
 			}
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			System.out.println(e);
 			map.put("success", false);
 			map.put("message", e.getMessage());
@@ -159,24 +163,49 @@ public class SellerDAOImple implements SellerDAO {
 
 	@Override
 	public ResponseEntity<?> sellerLogin(Seller seller) {
+		System.out.println("----------------------->"+seller.toString());
 		Map<String, Object> map = new LinkedHashMap<>();
-		try {
-			Seller sellerTemp = sellerRepository.findByS_EmailAddress(seller.getS_emailAddress());
+//		try {
+		Seller sellerTemp = sellerRepository.findByS_EmailAddress(seller.getS_emailAddress());
+//
+//			if (sellerTemp==null) {
+//				map.put("success", true);
+//				map.put("message", "Seller not found");
+//				return new ResponseEntity<>(map, HttpStatus.NOT_FOUND);
+//			}
+//			String existingPassword=sellerTemp.getS_password();
+//			logger.info("Fetched Seller: {}", sellerTemp);
+//			if(existingPassword.equals(seller.getS_password())) {
+//				map.put("success", true);
+//				map.put("message", "Login successfully");
+//				map.put("seller", sellerTemp);
+//				return new ResponseEntity<>(map, HttpStatus.OK);
+//			}
+//			else {
+//				map.put("success", true);
+//				map.put("message", "UserName or Password was incorrect");
+//				return new ResponseEntity<>(map, HttpStatus.NOT_FOUND);
+//			}
+//		} catch (Exception e) {
+//			System.out.println(e);
+//
+//			map.put("success", false);
+//			map.put("message", e.getMessage());
+//			return new ResponseEntity<>(map, HttpStatus.METHOD_NOT_ALLOWED);
+//		}
 
-			if (sellerTemp==null) {
-				map.put("success", true);
-				map.put("message", "Seller not found");
-				return new ResponseEntity<>(map, HttpStatus.NOT_FOUND);
-			}
-			String existingPassword=sellerTemp.getS_password();
-			logger.info("Fetched Seller: {}", sellerTemp);
-			if(existingPassword.equals(seller.getS_password())) {
+		try {
+
+			Authentication authentication = authManager.authenticate(
+					new UsernamePasswordAuthenticationToken(seller.getS_emailAddress(), seller.getS_password()));
+
+			if (authentication.isAuthenticated()) {
 				map.put("success", true);
 				map.put("message", "Login successfully");
 				map.put("seller", sellerTemp);
+				map.put("token",jwtServices.generateToken(sellerTemp));
 				return new ResponseEntity<>(map, HttpStatus.OK);
-			}
-			else {
+			} else {
 				map.put("success", true);
 				map.put("message", "UserName or Password was incorrect");
 				return new ResponseEntity<>(map, HttpStatus.NOT_FOUND);
@@ -188,6 +217,7 @@ public class SellerDAOImple implements SellerDAO {
 			map.put("message", e.getMessage());
 			return new ResponseEntity<>(map, HttpStatus.METHOD_NOT_ALLOWED);
 		}
+
 	}
 
 }

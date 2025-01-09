@@ -21,6 +21,7 @@ public class Userprinciple implements UserDetails{
 		super();
 		this.seller = seller;
 		System.err.println(seller.toString());
+		System.out.println("http ---> ");
 	}
 
 	@Override

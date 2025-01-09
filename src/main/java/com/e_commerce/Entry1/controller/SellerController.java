@@ -36,6 +36,7 @@ public class SellerController {
 	
 	@PostMapping("/createSeller")
 	public ResponseEntity<?> addSeller(@RequestBody Seller seller) {
+		System.out.println("Seller Creation"+seller.toString());
 		return sellerDAO.addSeller(seller);
 	}
 

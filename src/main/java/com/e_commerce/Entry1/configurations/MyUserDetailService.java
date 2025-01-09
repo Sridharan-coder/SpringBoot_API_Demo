@@ -21,11 +21,14 @@ public class MyUserDetailService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Seller seller=sellerRepository.findByS_EmailAddress(username);
 		
+		
+		
+		Seller seller=sellerRepository.findByS_EmailAddress(username);
+
 		if (seller.getS_emailAddress().equals(username)) { 
 			return User.withUsername(username) 
-					.password("{noop}"+seller.getS_password()) // Use {noop} prefix for plain text password 
+					.password(seller.getS_password()) // Use {noop} prefix for plain text password 
 					.authorities(Collections.emptyList()) .build(); 
 		}
 	else{
